@@ -1,0 +1,8 @@
+Documentos para serem convertidos para o BD
+
+- Manual do Aluno [OK]
+- Calendário Acadêmico
+- Mapa de Sala e Laboratórios
+- Lista de Coordenadores
+- Manual de Colação de Grau
+- Manual do Zeev

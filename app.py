@@ -12,7 +12,7 @@ st.set_page_config(
 # 2. BARRA LATERAL (Sidebar)
 with st.sidebar:
     # Pode substituir o link abaixo por um URL do logótipo da sua universidade
-    st.image("https://cdn-icons-png.flaticon.com/512/8066/8066119.png", width=120) 
+    st.image("https://cdn-icons-png.flaticon.com/512/7407/7407117.png", width=80) 
     st.title("Sobre a Zélia")
     st.info(
         "Olá, sou a Zélia, a assistente virtual da Unijorge, criada para ajudar com dúvidas sobre o "

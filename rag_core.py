@@ -1,72 +1,103 @@
 import os
+from datetime import datetime
 from dotenv import load_dotenv
+
+# Importações atualizadas
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain_core.prompts import PromptTemplate
+from langchain_chroma import Chroma
+from langchain_core.tools import tool
+from langgraph.prebuilt import create_react_agent 
 
 load_dotenv()
 
-# Caminho do banco de dados
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PERSIST_DIRECTORY = os.path.join(SCRIPT_DIR, "chroma_db")
 
-# 1. Configurar Modelos (Exatamente os mesmos que já estavam a funcionar!)
+# 1. Configurar Modelos
 embeddings_model = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.3)
 
-# 2. Conectar ao Banco de Dados
+# 2. Conectar ao Banco de Dados Vetorial
 vector_store = Chroma(
     persist_directory=PERSIST_DIRECTORY,
     embedding_function=embeddings_model
 )
 retriever = vector_store.as_retriever(search_kwargs={"k": 4})
 
-# 3. O NOVO PROMPT (Agora com espaço para o histórico)
-template = """Você é a Zélia, a assistente virtual da universidade. 
-Sua função é responder a dúvidas dos alunos baseando-se APENAS nos trechos do manual fornecidos.
 
-Histórico recente da conversa:
-{historico_conversa}
+# ==========================================
+# 🛠️ CRIAÇÃO DAS FERRAMENTAS DO AGENTE
+# ==========================================
 
-Trechos do manual encontrados:
-{context}
+@tool
+def pesquisa_base_conhecimento(query: str) -> str:
+    """Pesquisa informações oficiais nos documentos da universidade. Use SEMPRE esta ferramenta para responder a dúvidas institucionais ou regras."""
+    docs = retriever.invoke(query)
+    
+    contextos_formatados = []
+    for doc in docs:
+        fonte = os.path.basename(doc.metadata.get('source', 'Documento Desconhecido'))
+        pagina = doc.metadata.get('page', 'N/A')
+        bloco = f"[ARQUIVO: {fonte} | PÁGINA: {pagina}]\n{doc.page_content}"
+        contextos_formatados.append(bloco)
+        
+    return "\n\n---\n\n".join(contextos_formatados)
 
-Pergunta atual do aluno: {question}
+@tool
+def consultar_data_atual() -> str:
+    """Consulta a data e hora atual do sistema em tempo real. Use esta ferramenta para saber o dia de hoje ao calcular prazos."""
+    agora = datetime.now()
+    return agora.strftime("%d/%m/%Y, %H:%M")
 
-Responda de forma clara, educada e direta. Se a resposta não estiver nos trechos do manual, diga que não tem essa informação no momento.
-Resposta:"""
+ferramentas = [pesquisa_base_conhecimento, consultar_data_atual]
 
-QA_PROMPT = PromptTemplate(
-    template=template,
-    input_variables=["historico_conversa", "context", "question"]
-)
 
-# 4. A Função RAG Atualizada
+# ==========================================
+# 🧠 CONFIGURAÇÃO DO AGENTE LANGGRAPH
+# ==========================================
+
+INSTRUCOES_SISTEMA = """Você é a Zélia, uma assistente virtual autónoma da universidade.
+Você tem ferramentas ao seu dispor. Sempre que não souber algo, pare e use a ferramenta apropriada.
+Se usar a 'pesquisa_base_conhecimento', lembre-se OBRIGATORIAMENTE de citar a fonte da informação no final da sua resposta (ex: Fonte: calendario.pdf, Página 2).
+Seja amigável, clara e direta."""
+
+# Cria o agente autónomo BÁSICO (Sem modificadores que causam erro de versão)
+agente = create_react_agent(llm, ferramentas)
+
+
+# ==========================================
+# 🚀 FUNÇÃO DE COMUNICAÇÃO (Chamada pela API)
+# ==========================================
 def get_rag_response(query: str, history: list = None) -> str:
     if history is None:
         history = []
         
-    # Formata o histórico de uma lista para um texto legível para a IA
-    historico_texto = ""
-    # Pegamos apenas as últimas 4 mensagens para não sobrecarregar a memória
+    # Colocamos a instrução do sistema diretamente como a PRIMEIRA mensagem
+    mensagens = [
+        ("system", INSTRUCOES_SISTEMA)
+    ]
+    
+    # 1. Injeta o histórico da conversa
     for msg in history[-4:]: 
-        remetente = "Aluno" if msg["role"] == "user" else "Zélia"
-        historico_texto += f"{remetente}: {msg['content']}\n"
-        
-    if not historico_texto:
-        historico_texto = "Nenhuma conversa anterior."
+        if msg["role"] == "user":
+            mensagens.append(("human", msg["content"]))
+        else:
+            mensagens.append(("ai", msg["content"]))
+            
+    # 2. Injeta a pergunta nova do aluno
+    mensagens.append(("human", query))
 
-    # Busca documentos relevantes
-    relevant_docs = retriever.invoke(query)
-    contexto = "\n\n".join([doc.page_content for doc in relevant_docs])
+   # 3. O Agente entra em ação, escolhe as ferramentas e responde
+    resposta = agente.invoke({"messages": mensagens})
     
-    # Preenche o prompt com o histórico, contexto e a pergunta
-    final_prompt = QA_PROMPT.format(
-        historico_conversa=historico_texto,
-        context=contexto, 
-        question=query
-    )
+    conteudo_bruto = resposta["messages"][-1].content
     
-    # Chama o Gemini
-    response = llm.invoke(final_prompt)
-    return response.content
+    # Se a resposta vier como um "pacote de dados" (lista com assinatura), extraímos só o texto
+    if isinstance(conteudo_bruto, list):
+        for bloco in conteudo_bruto:
+            if isinstance(bloco, dict) and 'text' in bloco:
+                return bloco['text']
+        return str(conteudo_bruto) # Fallback de segurança
+        
+    # Se já vier como texto simples, devolvemos direto
+    return conteudo_bruto

@@ -11,3 +11,6 @@ __pycache__/
 
 # Pasta do banco de dados vetorial local
 chroma_db/
+
+# Pasta de documentos da universidade
+documentos/

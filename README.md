@@ -1,7 +1,7 @@
 # Projeto Zél-ia (RAG)
 
 
-A Zélia é uma aplicação "full-stack" de Inteligência Artificial desenhada para atuar como assistente virtual universitária. Utiliza a arquitetura RAG (Retrieval-Augmented Generation) para processar o Manual do Aluno e responder de forma precisa a dúvidas académicas.
+A Zélia é uma aplicação de Inteligência Artificial desenhada para atuar como assistente virtual universitária. Utiliza a arquitetura RAG (Retrieval-Augmented Generation) para processar o Manual do Aluno (e outros documentos) e responder de forma precisa a dúvidas académicas.
 
 ## 🚀 Tecnologias Utilizadas
 
@@ -30,3 +30,38 @@ O projeto está dividido em três componentes principais:
 ```bash
 git clone [https://github.com/Fau-Pereira/zelia.git](https://github.com/Fau-Pereira/zelia.git)
 cd zelia
+```
+
+2. Crie e ative o ambiente virtual:
+>Windows
+```bash
+.\.venv\Scripts\activate
+```
+>Mac e Linux
+```bash
+source .venv/bin/activate
+```
+
+3. Instale as dependências
+```bash
+pip install -r requirements.txt
+```
+
+4. Configure as varáveis de ambiente e insira a sua API Key do Google
+```bash
+GOOGLE_API_KEY=sua_chave_aqui_sem_aspas
+```
+
+### Execução do Projeto
+
+Para correr a aplicação completa, necessitará de dois terminais abertos, ambos com o ambiente virtual (.venv) ativado.
+
+**Terminal 1 (Backend - FastAPI):** Inicie a API executando o comando abaixo. O servidor ficará disponível em http://127.0.0.1:8000.
+```bash
+uvicorn main:app --reload
+```
+
+**Terminal 2 (Frontend - Streamlit):** Com o servidor a correr no primeiro terminal, inicie a interface gráfica no segundo. Um novo separador será aberto automaticamente no seu browser.
+```bash
+streamlit run app.py
+```

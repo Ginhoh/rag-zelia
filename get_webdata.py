@@ -42,29 +42,8 @@ def api():
 
 
 # loading()
-os.environ["USER_AGENT"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
-PROMPT = """Você é a Zélia, uma assistente virtual autónoma da universidade.
-Você tem ferramentas ao seu dispor. Sempre que não souber algo, pare e use a ferramenta apropriada.
-No momento, está encarregada de informar sobre os eventos que irão ocorrer na unijorge.
-
-Você consultara os dados do seguinte lugar: {asyncio.run(main())}"""
 
 
-def pergunta():
-    '''Quais os principais eventos que ocorrerão em maio?'''
-    return str('Quais eventos ocorrerão em maio?')
-agente = create_agent(
-    ChatGoogleGenerativeAI(model='gemini-2.5-flash',temperature = 0.5), # Modelo mais leve e rápido, ideal para tarefas de consulta e resposta.
-    tools=[pergunta],
-    system_prompt=PROMPT
-)
-
-resultado = agente.invoke({"messages": [{"role": "user", "content": pergunta()}]})
-print(resultado['messages'][-1].content_blocks[0]['text']) # A resposta final da Zélia, já processada e pronta para ser exibida ao usuário.
-
-@tool
 async def extrair_com_scroll_infinito(url):
     """Esta função usa o Playwright para acessar a página de eventos da Unijorge, rolar a página para baixo várias vezes para garantir que todos os eventos sejam carregados (mesmo aqueles que aparecem apenas com o scroll), e então extrai o texto completo da página. O resultado é um documento LangChain contendo o texto extraído, que pode ser usado como fonte de conhecimento para a Zélia responder perguntas sobre os eventos."""
     async with async_playwright() as p:
@@ -97,7 +76,7 @@ async def extrair_com_scroll_infinito(url):
         await browser.close()
         return content
 
-@tool # Decorador do LangChain para transformar esta função em uma ferramenta utilizável pelo agente
+#@tool # Decorador do LangChain para transformar esta função em uma ferramenta utilizável pelo agente
 async def main():
     """Extrai o texto da página de eventos da Unijorge, rolando a página para garantir que todos os eventos sejam carregados. Retorna os primeiros 2000 caracteres do conteúdo extraído para validação. Use esta ferramenta para obter informações atualizadas sobre os eventos que ocorrerão na universidade."""
     url = "https://eventos.unijorge.com.br/eventos/"
@@ -111,7 +90,34 @@ async def main():
     # print(f"\n--- RELATÓRIO ---")
     # print(f"Total aproximado de eventos encontrados: {eventos_detectados}")
     # print(f"Prévia do conteúdo:\n{doc.page_content[:2000]}") # Mostra os primeiros 2000 caracteres para validação
-    return doc.page_content[:2000] # Retorna só os primeiros 2000 caracteres para evitar sobrecarga
+    return doc.page_content[:500:2000] # Retorna só os primeiros 2000 caracteres para evitar sobrecarga
 
-# if __name__ == "__main__":
-#     asyncio.run(main())
+
+os.environ["USER_AGENT"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+PROMPT = """Você é a Zélia, uma assistente virtual autónoma da universidade.
+Você tem ferramentas ao seu dispor. Sempre que não souber algo, pare e use a ferramenta apropriada.
+No momento, está encarregada de informar sobre os eventos que irão ocorrer na unijorge.
+
+Você consultara os dados do seguinte lugar: {tools}"""
+
+
+def pergunta():
+    '''Quais os principais eventos que ocorrerão em maio?'''
+    return str('Quais eventos ocorrerão em maio?')
+agente = create_agent(
+    ChatGoogleGenerativeAI(model='gemini-2.5-flash',temperature = 0.5), # Modelo mais leve e rápido, ideal para tarefas de consulta e resposta.
+    tools=[main],
+    system_prompt=PROMPT
+)
+
+#utiliza o ainvoke para chamar o agente e obter a resposta, que pode incluir o uso da ferramenta 'main' para extrair os dados atualizados dos eventos. De modo assícrono
+async def rodar():
+    resultado = await agente.ainvoke({"messages": [{"role": "user", "content": pergunta()}]})# A resposta da Zélia, que pode incluir o uso da ferramenta 'main' para extrair os dados atualizados dos eventos.
+
+    print(resultado['messages'][-1].content['text']) # A resposta final da Zélia, já processada e pronta para ser exibida ao usuário.
+
+if __name__ == "__main__":
+    asyncio.run(rodar())
+#      print(asyncio.run(main()))

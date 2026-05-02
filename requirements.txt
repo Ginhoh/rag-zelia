@@ -17,6 +17,7 @@ charset-normalizer==3.4.4
 chromadb==1.5.1
 click==8.3.1
 colorama==0.4.6
+crawl4ai
 cryptography==46.0.5
 dataclasses-json==0.6.7
 distro==1.9.0
@@ -84,7 +85,10 @@ ormsgpack==1.12.2
 overrides==7.7.0
 packaging==26.0
 pandas==2.3.3
+pdf2image
+pdfminer.six
 pillow==12.1.1
+playwright
 posthog==5.4.0
 propcache==0.4.1
 protobuf==6.33.5
@@ -103,6 +107,7 @@ PyPika==0.51.1
 pyproject_hooks==1.2.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
+pi-heif
 pytz==2025.2
 PyYAML==6.0.3
 referencing==0.37.0
@@ -132,6 +137,8 @@ typing_extensions==4.15.0
 tzdata==2025.3
 urllib3==2.6.3
 uuid_utils==0.14.1
+unstructured
+unstructured_inference
 uvicorn==0.41.0
 watchdog==6.0.0
 watchfiles==1.1.1

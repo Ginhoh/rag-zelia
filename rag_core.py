@@ -5,8 +5,12 @@ from dotenv import load_dotenv
 # Importações atualizadas
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_chroma import Chroma
+#from langchain_community.vectorstores import Chroma
 from langchain_core.tools import tool
-from langgraph.prebuilt import create_react_agent 
+from langchain.agents import create_agent
+
+import asyncio
+from get_webdata import main
 
 load_dotenv()
 
@@ -49,7 +53,12 @@ def consultar_data_atual() -> str:
     agora = datetime.now()
     return agora.strftime("%d/%m/%Y, %H:%M")
 
-ferramentas = [pesquisa_base_conhecimento, consultar_data_atual]
+@tool
+def consultar_eventos() -> str:
+    """Consulta os dados informando sobre os eventos institucionais. De primeira vista, os dados estarão como se acabassem de ser colados, você organizará os dados de acordo com cada evento, e retornará com precisão de acordo com o que o usuário pedir. Use sempre que o usuário pedir informação sobre algum evento."""
+    return asyncio.run(main())
+
+ferramentas = [pesquisa_base_conhecimento, consultar_data_atual, consultar_eventos]
 
 
 # ==========================================
@@ -62,7 +71,7 @@ Se usar a 'pesquisa_base_conhecimento', lembre-se OBRIGATORIAMENTE de citar a fo
 Seja amigável, clara e direta."""
 
 # Cria o agente autónomo BÁSICO (Sem modificadores que causam erro de versão)
-agente = create_react_agent(llm, ferramentas)
+agente = create_agent(llm, ferramentas)
 
 
 # ==========================================
@@ -101,3 +110,4 @@ def get_rag_response(query: str, history: list = None) -> str:
         
     # Se já vier como texto simples, devolvemos direto
     return conteudo_bruto
+

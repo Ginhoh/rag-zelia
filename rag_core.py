@@ -55,10 +55,17 @@ def consultar_data_atual() -> str:
 
 @tool
 def consultar_eventos() -> str:
-    """Consulta os dados informando sobre os eventos institucionais. De primeira vista, os dados estarão como se acabassem de ser colados, você organizará os dados de acordo com cada evento, e retornará com precisão de acordo com o que o usuário pedir. Use sempre que o usuário pedir informação sobre algum evento."""
+    """Consulta os dados informando sobre os eventos institucionais. De primeira vista, os dados estarão como se acabassem de ser colados, você organizará os dados de acordo com cada evento, e retornará com precisão de acordo com o que o usuário pedir. Use sempre que o usuário pedir informação sobre algum evento. Em caso de interesse em algum evento específicom ou quando a lista não for tão grande, mostre também o link de inscrição, caso haja."""
     return asyncio.run(main())
 
-ferramentas = [pesquisa_base_conhecimento, consultar_data_atual, consultar_eventos]
+@tool
+def consultar_evento_especifico(query:str) -> str:
+    """Consulta os dados detalhados sobre um determinado evento. 
+     na {query}, quero que você pegue apenas o link sobre o evento que ele quer saber mais, e retorne normalmente.
+       Use sempre que o usuário pedir informação detalhadasobre algum evento e use SOMENTE após a ferramenta consultar eventos já estiver sido consultada. Lembre-se de retornar o link para inscrição também."""
+    return asyncio.run(main(query))
+
+ferramentas = [pesquisa_base_conhecimento, consultar_data_atual, consultar_eventos, consultar_evento_especifico]
 
 
 # ==========================================

@@ -65,16 +65,28 @@ async def extrair_com_scroll_infinito(url):
             await page.wait_for_timeout(2000) 
 
         # Captura o texto final
+        #Código em JavaScript para extrair o link e adicioanr ao texto
         print("Extraindo texto completo...")
-        content = await page.evaluate("() => document.body.innerText")
+        content = await page.evaluate("""() => {
+        // Transforma todos os links da página em formato Markdown [Texto](URL)
+        const links = document.querySelectorAll('a');
+        links.forEach(link => {
+            const href = link.href;
+            const text = link.innerText.trim();
+            if (href && text) {
+                const markdownLink = ` [${text}](${href}) `;
+                link.parentNode.replaceChild(document.createTextNode(markdownLink), link);
+            }
+        });
+        return document.body.innerText;
+    }""")
         
         await browser.close()
         return content
 
 #@tool # Decorador do LangChain para transformar esta função em uma ferramenta utilizável pelo agente
-async def main():
+async def main(url: str ='https://eventos.unijorge.com.br/eventos/'):
     """Extrai o texto da página de eventos da Unijorge, rolando a página para garantir que todos os eventos sejam carregados. Retorna os primeiros 2000 caracteres do conteúdo extraído para validação. Use esta ferramenta para obter informações atualizadas sobre os eventos que ocorrerão na universidade."""
-    url = "https://eventos.unijorge.com.br/eventos/"
     texto = await extrair_com_scroll_infinito(url)
     
     # Criando o documento LangChain
@@ -91,4 +103,4 @@ async def main():
 os.environ["USER_AGENT"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 if __name__ == "__main__":
-      print(asyncio.run(main()))
+      print(asyncio.run(extrair_com_scroll_infinito("https://eventos.unijorge.com.br/eventos/")))
